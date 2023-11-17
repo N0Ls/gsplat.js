@@ -11,6 +11,7 @@ import { FadeInPass } from "./webgl/passes/FadeInPass";
 export class WebGLRenderer {
     domElement: HTMLCanvasElement;
     gl: WebGL2RenderingContext;
+    time: number = 0;
 
     resize: () => void;
     setSize: (width: number, height: number) => void;
@@ -53,6 +54,7 @@ export class WebGLRenderer {
         let u_focal: WebGLUniformLocation;
         let u_view: WebGLUniformLocation;
         let u_texture: WebGLUniformLocation;
+        let u_time: WebGLUniformLocation;
 
         let positionAttribute: number;
         let indexAttribute: number;
@@ -90,6 +92,7 @@ export class WebGLRenderer {
         };
 
         const initWebGL = () => {
+            console.log("Initializing WebGL");
             worker = new SortWorker();
             const serializedScene = {
                 positions: activeScene.positions,
@@ -140,6 +143,9 @@ export class WebGLRenderer {
 
             u_view = gl.getUniformLocation(program, "view") as WebGLUniformLocation;
             gl.uniformMatrix4fv(u_view, false, activeCamera.viewMatrix.buffer);
+
+            u_time = gl.getUniformLocation(program, "uTime") as WebGLUniformLocation;
+            gl.uniform1f(u_time, this.time);
 
             const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
             vertexBuffer = gl.createBuffer() as WebGLBuffer;
@@ -228,6 +234,11 @@ export class WebGLRenderer {
             worker.postMessage({ viewProj: activeCamera.viewProj });
 
             if (activeScene.vertexCount > 0) {
+                //update time
+                this.time += 1 / 60;
+                // console.log(this.time);
+                gl.uniform1f(u_time, this.time);
+
                 for (const shaderPass of shaderPasses) {
                     shaderPass.render();
                 }

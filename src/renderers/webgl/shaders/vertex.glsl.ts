@@ -6,6 +6,8 @@ export const vertex = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 
+uniform float uTime;
+
 uniform highp usampler2D u_texture;
 uniform mat4 projection, view;
 uniform vec2 focal;
@@ -20,9 +22,40 @@ in int index;
 out vec4 vColor;
 out vec2 vPosition;
 
+out float vTime;
+out vec4 vTechPosition;
+out vec2 vCenter;
+out vec3 worldPosition;
+
+float cubicPulse( float c, float w, float x ){
+    x = abs(x - c);
+    if( x>w ) return 0.000;
+    x /= w;
+    return 1.0
+        - x*x*(3.000-2.0*x);
+}
+
 void main () {
+    vTime = uTime;
+
     uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
-    vec4 cam = view * vec4(uintBitsToFloat(cen.xyz), 1);
+    worldPosition = vec3(uintBitsToFloat(cen.xyz));
+
+    float value = (sin(vTime * 1.0) * 2.6) + 0.6;
+    float size = 0.3;
+    float zone = cubicPulse(value, size, worldPosition.y);
+
+    if (zone > 0.01) {
+        worldPosition.x += zone * 0.2 * sign(worldPosition.x);
+        worldPosition.y += zone * 0.2 * sign(worldPosition.y);
+    }
+
+    worldPosition.x *= (sin(0.8 * vTime)+1.0) / 2.0;
+    worldPosition.y *= (sin(0.8 * vTime)+1.0) / 2.0;
+    worldPosition.z *= (sin(0.8 * vTime)+1.0) / 2.0;
+    
+    vec4 cam = view * vec4(worldPosition, 1);
+
     vec4 pos2d = projection * cam;
 
     float clip = 1.2 * pos2d.w;
@@ -68,11 +101,23 @@ void main () {
         scalingFactor = clamp((u_depthFade - start) / (end - start), 0.0, 1.0);
     }
 
-    vec2 vCenter = vec2(pos2d) / pos2d.w;
+    float depthNorm = (pos2d.z / pos2d.w + 1.0) / 2.0;
+    float near = 0.1; float far = 100.0;
+    float normalizedDepth = (2.0 * near) / (far + near - depthNorm * (far - near));
+    float start = max(normalizedDepth - 0.5, 0.0);
+    float end = min(normalizedDepth + 0.5, 1.0);
+    // scalingFactor = clamp((1.0 - start) / (end - start), 0.0, 2.0);
+
+    vec2 cent = vec2(pos2d);
+
+    vec2 center = cent / pos2d.w;
+    vCenter = center;
     gl_Position = vec4(
-        vCenter 
+        center 
         + position.x * majorAxis * scalingFactor / viewport 
         + position.y * minorAxis * scalingFactor / viewport, 0.0, 1.0);
+
+    vTechPosition = gl_Position;
 
 }
 `;
