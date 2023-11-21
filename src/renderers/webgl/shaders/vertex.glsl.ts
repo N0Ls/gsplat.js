@@ -101,13 +101,6 @@ void main () {
         scalingFactor = clamp((u_depthFade - start) / (end - start), 0.0, 1.0);
     }
 
-    float depthNorm = (pos2d.z / pos2d.w + 1.0) / 2.0;
-    float near = 0.1; float far = 100.0;
-    float normalizedDepth = (2.0 * near) / (far + near - depthNorm * (far - near));
-    float start = max(normalizedDepth - 0.5, 0.0);
-    float end = min(normalizedDepth + 0.5, 1.0);
-    // scalingFactor = clamp((1.0 - start) / (end - start), 0.0, 2.0);
-
     vec2 cent = vec2(pos2d);
 
     vec2 center = cent / pos2d.w;
