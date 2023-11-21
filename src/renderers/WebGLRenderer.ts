@@ -291,6 +291,8 @@ export class WebGLRenderer {
         };
 
         this.dispose = () => {
+            if (!initialized) return;
+
             worker.terminate();
 
             gl.deleteShader(vertexShader);
