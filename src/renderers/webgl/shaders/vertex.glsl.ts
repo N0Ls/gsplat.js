@@ -16,6 +16,10 @@ uniform vec2 viewport;
 uniform bool u_useDepthFade;
 uniform float u_depthFade;
 
+uniform vec2 mouse;
+uniform vec3 cameraPosition;
+uniform bool clicked;
+
 in vec2 position;
 in int index;
 
@@ -50,9 +54,27 @@ void main () {
         worldPosition.y += zone * 0.2 * sign(worldPosition.y);
     }
 
-    worldPosition.x *= (sin(0.8 * vTime)+1.0) / 2.0;
-    worldPosition.y *= (sin(0.8 * vTime)+1.0) / 2.0;
-    worldPosition.z *= (sin(0.8 * vTime)+1.0) / 2.0;
+    //compute sphere around origin
+
+    float radiusOrigin = 1.2;
+    float dist = length(worldPosition);
+    if (dist < radiusOrigin) {
+            //compute vector between origin and camera position
+            vec3 origin = vec3(0.0, 0.0, 0.0);
+            vec3 v = cameraPosition - origin;
+
+            //displace world position along vector
+
+            worldPosition -= (radiusOrigin - dist) * normalize(v);
+
+            //reduce displacement with time to go back to original position
+
+            worldPosition += (radiusOrigin - dist) * normalize(v) * (sin(0.5 * vTime)+1.0) / 2.0;
+    }
+
+    // worldPosition.x *= (sin(0.8 * vTime)+1.0) / 2.0;
+    // worldPosition.y *= (sin(0.8 * vTime)+1.0) / 2.0;
+    // worldPosition.z *= (sin(0.8 * vTime)+1.0) / 2.0;
     
     vec4 cam = view * vec4(worldPosition, 1);
 

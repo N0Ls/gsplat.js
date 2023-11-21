@@ -7,11 +7,13 @@ import { vertex } from "./webgl/shaders/vertex.glsl";
 import { frag } from "./webgl/shaders/frag.glsl";
 import { ShaderPass } from "./webgl/passes/ShaderPass";
 import { FadeInPass } from "./webgl/passes/FadeInPass";
+import { Vector3 } from "../index";
 
 export class WebGLRenderer {
     domElement: HTMLCanvasElement;
     gl: WebGL2RenderingContext;
     time: number = 0;
+    mousePosition: { x: number; y: number } = { x: 0, y: 0 }
 
     resize: () => void;
     setSize: (width: number, height: number) => void;
@@ -66,6 +68,40 @@ export class WebGLRenderer {
         let covBBuffer: WebGLBuffer;
 
         let initialized = false;
+
+        //add mouse move event listener
+        canvas.addEventListener('mousemove', (e) => {
+            this.mousePosition.x = e.clientX;
+            this.mousePosition.y = e.clientY;
+
+            //divide by canvas width and height
+            this.mousePosition.x /= canvas.width;
+            this.mousePosition.y /= canvas.height;
+
+            // console.log(this.mousePosition);
+        });
+
+        // add mouse down event listener
+
+        canvas.addEventListener('mousedown', (e) => {
+            //compute vector from camera to mouse position
+            const mouseVector = new Vector3(this.mousePosition.x, this.mousePosition.y, 0);
+            mouseVector.subtract(activeCamera.position);
+            mouseVector.normalize();
+
+            //send camera position to shader
+            gl.uniform3f(gl.getUniformLocation(program, "cameraPosition"), activeCamera.position.x, activeCamera.position.y, activeCamera.position.z);
+            
+            //update boolean in shader
+            gl.uniform1i(gl.getUniformLocation(program, "clicked"), 1);
+        });
+
+        // add mouse up event listener
+
+        canvas.addEventListener('mouseup', (e) => {
+            // update boolean in shader
+            gl.uniform1i(gl.getUniformLocation(program, "clicked"), 0);
+        });
 
         this.resize = () => {
             const width = canvas.clientWidth;
@@ -238,6 +274,10 @@ export class WebGLRenderer {
                 this.time += 1 / 60;
                 // console.log(this.time);
                 gl.uniform1f(u_time, this.time);
+
+                //update mouse position
+
+                gl.uniform2f(gl.getUniformLocation(program, "mouse"), this.mousePosition.x, this.mousePosition.y);
 
                 for (const shaderPass of shaderPasses) {
                     shaderPass.render();
