@@ -7,13 +7,13 @@ import { vertex } from "./webgl/shaders/vertex.glsl";
 import { frag } from "./webgl/shaders/frag.glsl";
 import { ShaderPass } from "./webgl/passes/ShaderPass";
 import { FadeInPass } from "./webgl/passes/FadeInPass";
-import { Vector3 } from "../index";
+import { Matrix4, Vector3 } from "../index";
 
 export class WebGLRenderer {
     domElement: HTMLCanvasElement;
     gl: WebGL2RenderingContext;
     time: number = 0;
-    mousePosition: { x: number; y: number } = { x: 0, y: 0 }
+    mousePosition: { x: number; y: number } = { x: 0, y: 0 };
 
     resize: () => void;
     setSize: (width: number, height: number) => void;
@@ -70,37 +70,91 @@ export class WebGLRenderer {
         let initialized = false;
 
         //add mouse move event listener
-        canvas.addEventListener('mousemove', (e) => {
+        canvas.addEventListener("mousemove", (e) => {
             this.mousePosition.x = e.clientX;
             this.mousePosition.y = e.clientY;
-
-            //divide by canvas width and height
-            this.mousePosition.x /= canvas.width;
-            this.mousePosition.y /= canvas.height;
-
-            // console.log(this.mousePosition);
         });
 
         // add mouse down event listener
 
-        canvas.addEventListener('mousedown', (e) => {
+        canvas.addEventListener("mousedown", (e) => {
             //compute vector from camera to mouse position
             const mouseVector = new Vector3(this.mousePosition.x, this.mousePosition.y, 0);
             mouseVector.subtract(activeCamera.position);
             mouseVector.normalize();
 
             //send camera position to shader
-            gl.uniform3f(gl.getUniformLocation(program, "cameraPosition"), activeCamera.position.x, activeCamera.position.y, activeCamera.position.z);
-            
+            gl.uniform3f(
+                gl.getUniformLocation(program, "cameraPosition"),
+                activeCamera.position.x,
+                activeCamera.position.y,
+                activeCamera.position.z,
+            );
+
             //update boolean in shader
             gl.uniform1i(gl.getUniformLocation(program, "clicked"), 1);
         });
 
         // add mouse up event listener
 
-        canvas.addEventListener('mouseup', (e) => {
+        canvas.addEventListener("mouseup", (e) => {
             // update boolean in shader
             gl.uniform1i(gl.getUniformLocation(program, "clicked"), 0);
+
+            const ndcX = (this.mousePosition.x / canvas.width) * 2 - 1;
+            const ndcY = -(this.mousePosition.y / canvas.height) * 2 + 1;
+
+            // Create a new Vector3 in clip space
+            const clipSpacePosition = new Vector3(ndcX, ndcY, 1);
+
+            const projectionMatrix = activeCamera.projectionMatrix;
+            const camViewMatrix = activeCamera.viewMatrix;
+
+            const viewProj = projectionMatrix.multiply(camViewMatrix);
+
+            const inverseProjectionMatrix = Matrix4.invert(viewProj);
+
+            // Use the inverse of the projection matrix to transform the point to world space
+            // const inverseProjectionMatrix = Matrix4.invert(activeCamera.viewProj);
+            let rayDirection = clipSpacePosition.transformMat4(inverseProjectionMatrix);
+
+            // rayDirection = rayDirection.transformMat4(activeCamera.viewProj);
+
+            const rayPos = activeCamera.position;
+
+            rayDirection = rayDirection.subtract(rayPos);
+
+            rayDirection = rayDirection.normalize();
+
+            const rayScaled = rayDirection.multiply(5.0);
+            // // Normalize the direction
+            // rayDirection.normalize();
+
+            console.log(rayScaled);
+
+            const rayResult = rayPos.add(rayScaled);
+
+            console.log(rayResult);
+
+            // this.intersect(rayPos, rayDirection3, new Vector3(0, 0, 0), 0.5);
+
+            //pass to shader
+            gl.uniform3f(
+                gl.getUniformLocation(program, "rayDirection"),
+                rayDirection.x,
+                rayDirection.y,
+                rayDirection.z,
+            );
+
+            gl.uniform3f(
+                gl.getUniformLocation(program, "cameraPosition"),
+                activeCamera.position.x,
+                activeCamera.position.y,
+                activeCamera.position.z,
+            );
+
+            // Create a new Ray with the camera position as the origin and the calculated direction
+            // const ray = new Ray(activeCamera.position, rayDirection);
         });
 
         this.resize = () => {
@@ -309,5 +363,41 @@ export class WebGLRenderer {
         };
 
         this.resize();
+    }
+
+    intersect(rayPos: Vector3, rayDir: Vector3, spherePos: Vector3, sphereRadius: number): boolean {
+        // Step 1
+        const oc = spherePos.subtract(rayPos);
+
+        // Step 2
+        const t = oc.dot(rayDir);
+
+        // Step 3
+        if (t < 0) {
+            console.log("t < 0");
+            console.log("sphere behind camera");
+            return false;
+        }
+
+        // Step 4
+        const r2 = sphereRadius * sphereRadius;
+        const oc2 = oc.dot(oc);
+        const h2 = oc2 - t * t;
+
+        // Step 5
+        if (h2 > r2) {
+            console.log("h2 > r2");
+            console.log("ray misses sphere");
+            return false;
+        }
+
+        // Step 6
+        const h = Math.sqrt(r2 - h2);
+        const t0 = t - h;
+        const t1 = t + h;
+
+        // Return the closest intersection point
+        console.log(rayPos.add(rayDir.multiply(t0)));
+        return true;
     }
 }

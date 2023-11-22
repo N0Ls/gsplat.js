@@ -1,3 +1,5 @@
+import { Matrix4 } from "./Matrix4";
+
 class Vector3 {
     public readonly x: number;
     public readonly y: number;
@@ -77,6 +79,39 @@ class Vector3 {
 
     clone(): Vector3 {
         return new Vector3(this.x, this.y, this.z);
+    }
+
+    transformMat4(matrix: Matrix4): Vector3 {
+        const x = this.x,
+            y = this.y,
+            z = this.z;
+        const e = matrix.buffer;
+
+        const w = 1 / (e[3] * x + e[7] * y + e[11] * z + e[15]);
+
+        return new Vector3(
+            (e[0] * x + e[4] * y + e[8] * z + e[12]) * w,
+            (e[1] * x + e[5] * y + e[9] * z + e[13]) * w,
+            (e[2] * x + e[6] * y + e[10] * z + e[14]) * w,
+        );
+    }
+
+    dot(v: Vector3): number {
+        return this.x * v.x + this.y * v.y + this.z * v.z;
+    }
+
+    static setFromMatrixPosition(m: Matrix4): Vector3 {
+        let x = 0;
+        let y = 0;
+        let z = 0;
+
+        const e = m.buffer;
+
+        x = e[12];
+        y = e[13];
+        z = e[14];
+
+        return new Vector3(x, y, z);
     }
 }
 

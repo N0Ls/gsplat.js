@@ -19,6 +19,7 @@ uniform float u_depthFade;
 uniform vec2 mouse;
 uniform vec3 cameraPosition;
 uniform bool clicked;
+uniform vec3 rayDirection;
 
 in vec2 position;
 in int index;
@@ -39,6 +40,42 @@ float cubicPulse( float c, float w, float x ){
         - x*x*(3.000-2.0*x);
 }
 
+vec3 sub(vec3 a, vec3 b) {
+    return vec3(a.x - b.x, a.y - b.y, a.z - b.z);
+}
+
+vec3 add(vec3 a, vec3 b) {
+    return vec3(a.x + b.x, a.y + b.y, a.z + b.z);
+}
+
+bool intersect(vec3 rayPos, vec3 rayDir, vec3 spherePos, float sphereRadius) {
+    // Step 1
+    vec3 oc = sub(spherePos, rayPos);
+
+    // Step 2
+    float t = dot(oc, rayDir);
+
+    // Step 3
+    if (t < 0.0) return false;
+
+    // Step 4
+    float r2 = sphereRadius * sphereRadius;
+    float oc2 = dot(oc, oc);
+    float h2 = oc2 - t * t;
+
+    // Step 5
+    if (h2 > r2) return false;
+
+    // Step 6
+    float h = sqrt(r2 - h2);
+    float t0 = t - h;
+    float t1 = t + h;
+
+    // Return the closest intersection point
+    // return add(rayPos, rayDir * t0);
+    return true;
+}
+
 void main () {
     vTime = uTime;
 
@@ -56,25 +93,39 @@ void main () {
 
     //compute sphere around origin
 
-    float radiusOrigin = 1.2;
-    float dist = length(worldPosition);
-    if (dist < radiusOrigin) {
-            //compute vector between origin and camera position
-            vec3 origin = vec3(0.0, 0.0, 0.0);
-            vec3 v = cameraPosition - origin;
+    float radiusOrigin = 1.0;
 
-            //displace world position along vector
+    // compute sphere origin from mouse position
 
-            worldPosition -= (radiusOrigin - dist) * normalize(v);
+    vec3 sphereOrigin = vec3(0.0, 0.0, 0.0);
 
-            //reduce displacement with time to go back to original position
+    //compute distance between world position and position of sphere origin
 
-            worldPosition += (radiusOrigin - dist) * normalize(v) * (sin(0.5 * vTime)+1.0) / 2.0;
+    float dist = length(worldPosition - sphereOrigin);
+
+    bool inter = intersect(cameraPosition, rayDirection, worldPosition, 1.2);
+
+    if (inter) {
+        //compute vector between origin and camera position
+        // vec3 origin = vec3(0.0, 0.0, 0.0);
+        // vec3 v = cameraPosition - origin;
+
+        // //compute vector between mouse position and camera position
+        // vec3 v2 = cameraPosition - vec3(mouse, 1.0);
+
+        // //displace world position along vector
+
+        // worldPosition -= (radiusOrigin - dist) * normalize(v);
+
+        // //reduce displacement with time to go back to original position
+
+        // worldPosition += (radiusOrigin - dist) * normalize(v) * (sin(0.5 * vTime)+1.0) / 2.0;
+        worldPosition.x *= (sin(0.8 * vTime)+1.0) / 2.0;
+        worldPosition.y *= (sin(0.8 * vTime)+1.0) / 2.0;
+        worldPosition.z *= (sin(0.8 * vTime)+1.0) / 2.0;
     }
 
-    // worldPosition.x *= (sin(0.8 * vTime)+1.0) / 2.0;
-    // worldPosition.y *= (sin(0.8 * vTime)+1.0) / 2.0;
-    // worldPosition.z *= (sin(0.8 * vTime)+1.0) / 2.0;
+
     
     vec4 cam = view * vec4(worldPosition, 1);
 
