@@ -107,34 +107,16 @@ export class WebGLRenderer {
             // Create a new Vector3 in clip space
             const clipSpacePosition = new Vector3(ndcX, ndcY, 1);
 
-            const projectionMatrix = activeCamera.projectionMatrix;
-            const camViewMatrix = activeCamera.viewMatrix;
-
-            const viewProj = projectionMatrix.multiply(camViewMatrix);
-
-            const inverseProjectionMatrix = Matrix4.invert(viewProj);
-
             // Use the inverse of the projection matrix to transform the point to world space
-            // const inverseProjectionMatrix = Matrix4.invert(activeCamera.viewProj);
+            const inverseProjectionMatrix = Matrix4.invert(activeCamera.viewProj);
             let rayDirection = clipSpacePosition.transformMat4(inverseProjectionMatrix);
-
-            // rayDirection = rayDirection.transformMat4(activeCamera.viewProj);
 
             const rayPos = activeCamera.position;
 
             rayDirection = rayDirection.subtract(rayPos);
 
+            // Normalize the direction
             rayDirection = rayDirection.normalize();
-
-            const rayScaled = rayDirection.multiply(5.0);
-            // // Normalize the direction
-            // rayDirection.normalize();
-
-            console.log(rayScaled);
-
-            const rayResult = rayPos.add(rayScaled);
-
-            console.log(rayResult);
 
             // this.intersect(rayPos, rayDirection3, new Vector3(0, 0, 0), 0.5);
 
