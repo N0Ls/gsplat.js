@@ -78,18 +78,8 @@ export class WebGLRenderer {
         // add mouse down event listener
 
         canvas.addEventListener("mousedown", (e) => {
-            //compute vector from camera to mouse position
-            const mouseVector = new Vector3(this.mousePosition.x, this.mousePosition.y, 0);
-            mouseVector.subtract(activeCamera.position);
-            mouseVector.normalize();
-
-            //send camera position to shader
-            gl.uniform3f(
-                gl.getUniformLocation(program, "cameraPosition"),
-                activeCamera.position.x,
-                activeCamera.position.y,
-                activeCamera.position.z,
-            );
+            this.mouseDownPosition.x = e.clientX;
+            this.mouseDownPosition.y = e.clientY;
 
             //update boolean in shader
             gl.uniform1i(gl.getUniformLocation(program, "clicked"), 1);
@@ -98,6 +88,14 @@ export class WebGLRenderer {
         // add mouse up event listener
 
         canvas.addEventListener("mouseup", (e) => {
+            //check if mouse has moved with a delta
+            const deltaX = Math.abs(this.mouseDownPosition.x - e.clientX);
+            const deltaY = Math.abs(this.mouseDownPosition.y - e.clientY);
+            if (deltaX > 5 || deltaY > 5) {
+                //mouse has moved
+                return;
+            }
+
             // update boolean in shader
             gl.uniform1i(gl.getUniformLocation(program, "clicked"), 0);
 
@@ -128,6 +126,14 @@ export class WebGLRenderer {
                 rayDirection.z,
             );
 
+            gl.uniform3f(
+                gl.getUniformLocation(program, "cameraPosition"),
+                activeCamera.position.x,
+                activeCamera.position.y,
+                activeCamera.position.z,
+            );
+
+            //send camera position to shader
             gl.uniform3f(
                 gl.getUniformLocation(program, "cameraPosition"),
                 activeCamera.position.x,
