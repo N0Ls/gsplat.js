@@ -14,6 +14,7 @@ export class WebGLRenderer {
     gl: WebGL2RenderingContext;
     time: number = 0;
     mousePosition: { x: number; y: number } = { x: 0, y: 0 };
+    mouseDownPosition: { x: number; y: number } = { x: 0, y: 0 };
 
     resize: () => void;
     setSize: (width: number, height: number) => void;
