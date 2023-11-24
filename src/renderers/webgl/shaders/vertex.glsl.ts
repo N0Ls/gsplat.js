@@ -110,16 +110,15 @@ void main () {
         vec3 origin = vec3(0.0, 0.0, 0.0);
         vec3 v = cameraPosition - origin;
 
-        //compute vector between mouse position and camera position
-        vec3 v2 = cameraPosition - vec3(mouse, 1.0);
+        v *= .5;
 
         //displace world position along vector
 
-        worldPosition -= (radiusOrigin - dist) * normalize(v);
+        worldPosition -= (radiusOrigin - dist) * v;
 
         //reduce displacement with time to go back to original position
 
-        worldPosition += (radiusOrigin - dist) * normalize(v) * (sin(0.5 * vTime)+1.0) / 2.0;
+        worldPosition += (radiusOrigin - dist) * v * (sin(0.5 * vTime)+1.0) / 2.0;
         // worldPosition.x *= (sin(0.8 * vTime)+1.0) / 2.0;
         // worldPosition.y *= (sin(0.8 * vTime)+1.0) / 2.0;
         // worldPosition.z *= (sin(0.8 * vTime)+1.0) / 2.0;
