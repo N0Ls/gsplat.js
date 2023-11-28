@@ -6,6 +6,9 @@ export const vertex = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 
+in vec3 aParticleSourcePosition;
+in vec3 aParticlePosition;
+
 uniform float uTime;
 
 uniform highp usampler2D u_texture;
@@ -31,6 +34,8 @@ out float vTime;
 out vec4 vTechPosition;
 out vec2 vCenter;
 out vec3 worldPosition;
+
+out vec3 oParticlePosition;
 
 float cubicPulse( float c, float w, float x ){
     x = abs(x - c);
@@ -77,6 +82,8 @@ bool intersect(vec3 rayPos, vec3 rayDir, vec3 spherePos, float sphereRadius) {
 }
 
 void main () {
+
+    oParticlePosition = aParticlePosition + aParticleSourcePosition;
     vTime = uTime;
 
     uvec4 cen = texelFetch(u_texture, ivec2((uint(index) & 0x3ffu) << 1, uint(index) >> 10), 0);
